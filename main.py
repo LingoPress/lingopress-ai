@@ -8,7 +8,9 @@ app = FastAPI()
 
 class ChatGptRequest(BaseModel):
     original_text: str
+    translated_text: str
     word: str
+    original_language: str = "english"
 
 
 class ChatGptResponse(BaseModel):
@@ -20,8 +22,9 @@ class ChatGptResponse(BaseModel):
 @app.post("/translate/word")
 async def translate(sentence: ChatGptRequest, api_key: str = Header(...)):
     chatgpt = ChatGpt(api_key)
-    response = chatgpt.translate_kor_word(sentence.original_text + "\n" + sentence.word)
-    print(sentence.original_text + "\n" + sentence.word)
+    response = chatgpt.translate_kor_word(sentence.original_text + "\n" + sentence.translated_text + "\n" +
+                                          sentence.word, original_language=sentence.original_language)
+    print(sentence.original_text + "\n" + sentence.translated_text + "\n" + sentence.word)
     print(response.usage.total_tokens)
     print(response.choices[0].message.content)
     return ChatGptResponse(text=response.choices[0].message.content, token=response.usage.total_tokens)

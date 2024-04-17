@@ -17,23 +17,32 @@ class ChatGpt:
             presence_penalty=presence_penalty
         )
 
-    def translate_kor_word(self, sentence):
+    def translate_kor_word(self, sentence, original_language):
+
+        content = ("The first line contains a sentence, the second line contains a translation of the sentence, "
+                   "and the third line contains an ") + original_language + (" word. It analyzes the original and the "
+                                                                             "translation and outputs what the word "
+                                                                             "means in the translation, only in Korean.")
+        print("content: ", content)
         response = self.create_chat(
             model="gpt-3.5-turbo-0125",
             messages=[
                 {
                     "role": "system",
-                    "content": "I give you English sentence on the first line and a word in the that sentence on the "
-                               "second line. print what means in Korean."
+                    "content": content
                 },
                 {
                     "role": "user",
                     "content": sentence
                 },
+                {
+                    "role": "assistant",
+                    "content": "추진했다"
+                }
 
             ],
             temperature=0.1,
-            max_tokens=256,
+            max_tokens=512,
             top_p=1,
             frequency_penalty=0,
             presence_penalty=0

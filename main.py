@@ -10,7 +10,8 @@ class ChatGptRequest(BaseModel):
     original_text: str
     translated_text: str
     word: str
-    original_language: str = "english"
+    original_language: str = "English"
+# 왜인지 몰라도 E로 시작해야 퀄리티가 좋음.
 
 
 class ChatGptResponse(BaseModel):

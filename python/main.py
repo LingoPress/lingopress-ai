@@ -1,9 +1,19 @@
+import time
+
 from fastapi import FastAPI, Header
+from mangum import Mangum
 from pydantic import BaseModel
 
 from chatgpt import ChatGpt
 
-app = FastAPI()
+from similarity_analysis import SimilarityAnalysis
+
+app = FastAPI(
+    title="링고프레스 ai관련 api",
+    description="링고프레스에서 사용하는 ai관련 api입니다. chat gpt와 similarity analysis를 제공합니다.",
+    version="0.1.0",
+    root_path="/v1",
+)
 
 
 class ChatGptRequest(BaseModel):
@@ -11,12 +21,23 @@ class ChatGptRequest(BaseModel):
     translated_text: str
     word: str
     original_language: str = "English"
+
+
 # 왜인지 몰라도 E로 시작해야 퀄리티가 좋음.
 
 
 class ChatGptResponse(BaseModel):
     text: str
     token: int
+
+
+class SimilarityRequest(BaseModel):
+    original_text: str
+    compared_text: str
+
+
+class SimilarityResponse(BaseModel):
+    similarity: float
 
 
 # 헤더에 api key를 넣어야함
@@ -29,3 +50,23 @@ async def translate(sentence: ChatGptRequest, api_key: str = Header(...)):
     print(response.usage.total_tokens)
     print(response.choices[0].message.content)
     return ChatGptResponse(text=response.choices[0].message.content, token=response.usage.total_tokens)
+
+
+@app.post("/text_similarity")
+async def text_similarity(sentence: SimilarityRequest):
+    start = time.time()
+
+    machine = SimilarityAnalysis()
+    similarity = machine.get_similarity(sentence.original_text,
+                                        sentence.compared_text)
+
+    print(f"Time taken: {time.time() - start}")
+    return SimilarityResponse(similarity=similarity)
+
+
+@app.get("/test")
+async def health_check():
+    return {"code": 200, "message": "success", "data": None}
+
+
+handler = Mangum(app)

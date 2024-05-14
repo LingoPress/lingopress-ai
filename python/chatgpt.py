@@ -18,11 +18,9 @@ class ChatGpt:
         )
 
     def translate_kor_word(self, sentence, original_language):
-        content = ("The first line contains a sentence, the second line contains a translation of the sentence, "
-                   "and the third line contains " + original_language + " word. It analyzes the original and the "
-                                                                        "translation and outputs what the word means "
-                                                                        "in the translation in Korean. "
-                                                                        "just speak korean means.")
+        content = ("The first line is a sentence, the second line is a translation sentence, "
+                   "and the third line is " + original_language + " word. "
+                   "analyzes translation sentence and outputs just what the word means in Korean.")
 
         print("content: ", content)
         response = self.create_chat(

@@ -5,7 +5,7 @@ class SimilarityAnalysis:
     def __init__(self):
         #model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
         #model = SentenceTransformer('jhgan/ko-sroberta-multitask')
-        model = SentenceTransformer('./model')
+        model = SentenceTransformer('./model_all-MiniLM-L6-v2')
 
         self.model = model
 

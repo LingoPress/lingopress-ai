@@ -6,7 +6,7 @@ COPY requirements.txt ${LAMBDA_TASK_ROOT}/
 
 RUN pip install -r requirements.txt
 
-ADD ./model ${LAMBDA_TASK_ROOT}/model/
+ADD ./model_all-MiniLM-L6-v2 ${LAMBDA_TASK_ROOT}/model_all-MiniLM-L6-v2/
 
 COPY ./*.py ${LAMBDA_TASK_ROOT}/
 

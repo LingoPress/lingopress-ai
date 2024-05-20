@@ -20,7 +20,8 @@ class ChatGptRequest(BaseModel):
     original_text: str
     translated_text: str
     word: str
-    original_language: str = "English"
+    target_language: str
+    user_language: str
 
 
 # 왜인지 몰라도 E로 시작해야 퀄리티가 좋음.
@@ -32,8 +33,8 @@ class ChatGptResponse(BaseModel):
 
 
 class SimilarityRequest(BaseModel):
-    original_text: str
-    compared_text: str
+    machineTranslatedText: str
+    userTranslatedText: str
 
 
 class SimilarityResponse(BaseModel):
@@ -45,7 +46,8 @@ class SimilarityResponse(BaseModel):
 async def translate(sentence: ChatGptRequest, api_key: str = Header(...)):
     chatgpt = ChatGpt(api_key)
     response = chatgpt.translate_kor_word(sentence.original_text + "\n" + sentence.translated_text + "\n" +
-                                          sentence.word, original_language=sentence.original_language)
+                                          sentence.word, target_language=sentence.target_language,
+                                          user_language=sentence.user_language)
     print(sentence.original_text + "\n" + sentence.translated_text + "\n" + sentence.word)
     print(response.usage.total_tokens)
     print(response.choices[0].message.content)
@@ -57,8 +59,8 @@ async def text_similarity(sentence: SimilarityRequest):
     start = time.time()
 
     machine = SimilarityAnalysis()
-    similarity = machine.get_similarity(sentence.original_text,
-                                        sentence.compared_text)
+    similarity = machine.get_similarity(sentence.machineTranslatedText,
+                                        sentence.userTranslatedText)
 
     print(f"Time taken: {time.time() - start}")
     return SimilarityResponse(similarity=similarity)

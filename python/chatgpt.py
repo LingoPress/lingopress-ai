@@ -17,10 +17,10 @@ class ChatGpt:
             presence_penalty=presence_penalty
         )
 
-    def translate_kor_word(self, sentence, original_language):
+    def translate_kor_word(self, sentence, target_language, user_language):
         content = ("The first line is a sentence, the second line is a translation sentence, "
-                   "and the third line is " + original_language + " word. "
-                   "analyzes translation sentence and outputs just what the word means in Korean.")
+                   "and the third line is " + target_language + " word. "
+                   "analyzes translation sentence and outputs just what the word means in " + user_language + ".")
 
         print("content: ", content)
         response = self.create_chat(

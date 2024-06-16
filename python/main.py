@@ -66,7 +66,7 @@ async def text_similarity(sentence: SimilarityRequest):
     return SimilarityResponse(similarity=similarity)
 
 
-@app.get("/test")
+@app.get("/warming-up")
 async def health_check():
     return {"code": 200, "message": "success", "data": None}
 

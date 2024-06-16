@@ -24,11 +24,14 @@ pytorch도 cpu만 사용하는 버전을 다운받아야한다는 점도 참고�
 
 참고로 이미지 한번 빌드할 때마다 1~20분은 잡아먹으니, 실수하지 않도록,,하는 것이 좋다. 
 
-그리고 람다 설에서 메모리를 최대한 올려주는 것이 좋다.
+그리고 람다 설정에서 메모리를 최대한 올려주는 것이 좋다.
 
 
 이 작업하는데 6시간 정도 사용한 거면.. 나름 괜찮은거같기도....
 ```
+
+sentense transformer model은 save_model.py를 이용하면 되고,
+추가적으로 whisper model은 Whisper 라이브러리에 들어가면 경로가 있다.
 
 [참고 자료 1](https://velog.io/@hyoj0942/AWS-LambdaCDK-Docker-Fastapi%EB%A1%9C-%EC%84%9C%EB%B2%84%EB%A6%AC%EC%8A%A4-%EB%B0%B1%EC%95%A4%EB%93%9C-%EB%B0%B0%ED%8F%AC%ED%95%98%EA%B8%B01)
 [참고 자료 2](https://aseifert.com/p/serverless-sentence-transformer/)

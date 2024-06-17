@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from chatgpt import ChatGpt
 
 from similarity_analysis import SimilarityAnalysis
+from youtube_script_extractor import get_youtube_script
 
 app = FastAPI(
     title="링고프레스 ai관련 api",
@@ -41,6 +42,14 @@ class SimilarityResponse(BaseModel):
     similarity: float
 
 
+class UrlRequest(BaseModel):
+    url: str
+
+
+class UrlResponse(BaseModel):
+    script: list
+
+
 # 헤더에 api key를 넣어야함
 @app.post("/translate/word")
 async def translate(sentence: ChatGptRequest, api_key: str = Header(...)):
@@ -69,6 +78,13 @@ async def text_similarity(sentence: SimilarityRequest):
 @app.get("/warming-up")
 async def health_check():
     return {"code": 200, "message": "success", "data": None}
+
+
+@app.post("/youtube_script")
+async def youtube_script(url: UrlRequest):
+    print(url)
+    script = get_youtube_script(url.url)
+    return {"code": 200, "message": "success", "data": script}
 
 
 handler = Mangum(app)

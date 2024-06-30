@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 
 from pytube import YouTube
 import whisper
@@ -54,7 +55,8 @@ def merge_segments(segments):
 
 
 def get_youtube_script(url):
-    audio_path = download_youtube_audio(url)
+    now_time = datetime.today().strftime("%Y%m%d%H%M%S%f")
+    audio_path = download_youtube_audio(url, now_time)
     segments = transcribe_audio(audio_path)
     os.remove(audio_path)
     return merge_segments(segments)

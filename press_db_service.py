@@ -55,6 +55,6 @@ class PressDbService(CRUD):
                                                                    content_line["end_ms"], content_line["text"]))
             self.insertPressYoutubeContentDB(last_press_id, line_number, content_line["text"], content_line["start_ms"], content_line["end_ms"])
 
-        logging.info(original_url, "업로드 완료")
+        logging.info("{} 업로드 완료".format(original_url))
 
         return last_press_id

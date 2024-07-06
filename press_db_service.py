@@ -12,8 +12,7 @@ class PressDbService(CRUD):
                              access_level, category):
         if self.check_exist_url(original_url):
             logging.info(original_url, "이미 존재하는 기사입니다.")
-            press_id = self.check_exist_url(original_url)
-            return press_id
+            return
 
         combined_content = ""
         total_content_line = 0

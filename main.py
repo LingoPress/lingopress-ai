@@ -1,21 +1,60 @@
+import json
+import logging
 import time
+from contextlib import asynccontextmanager
 
+import uvicorn
 from fastapi import FastAPI, Header
 from pydantic import BaseModel
 from concurrent.futures import ThreadPoolExecutor
-import asyncio
 
+import parse_message_to_dict
 from chatgpt import ChatGpt
 
 from similarity_analysis import SimilarityAnalysis
-from youtube_script_extractor import get_youtube_script
+from youtube_script_extractor import get_youtube_script, post_youtube_script
+import aio_pika
+import asyncio
+import os
+from dotenv import load_dotenv
+
+# load .env
+load_dotenv()
+
+rabbitmq_host = os.environ.get('RABBITMQ_HOST')
+rabbitmq_user = os.environ.get('RABBITMQ_USER')
+rabbitmq_password = os.environ.get('RABBITMQ_PASSWORD')
+
+
+logging.basicConfig(
+    level=logging.INFO,  # 로그 레벨 설정
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # 로그 출력 형식
+    handlers=[
+        logging.StreamHandler()  # 콘솔로 로그 출력
+    ]
+)
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    loop = asyncio.get_event_loop()
+    task = loop.create_task(rabbitmq_listener())
+    yield
+    task.cancel()
+    await task
+
 
 app = FastAPI(
     title="링고프레스 ai관련 api",
     description="링고프레스에서 사용하는 ai관련 api입니다. chat gpt와 similarity analysis를 제공합니다.",
     version="0.1.0",
     root_path="/v1",
+    lifespan=lifespan
 )
+
+# RabbitMQ 설정
+request_queue_name = "videoProcessingRequestQueue"
+response_queue_name = "videoProcessingResponseQueue"
 
 # 비동기 실행을 위한 ThreadPoolExecutor
 executor = ThreadPoolExecutor()
@@ -59,6 +98,9 @@ class UrlResponse(BaseModel):
     script: list
 
 
+app.router.lifespan_context = lifespan
+
+
 # 헤더에 api key를 넣어야함
 @app.post("/translate/word")
 async def translate(sentence: ChatGptRequest, api_key: str = Header(...)):
@@ -89,3 +131,40 @@ async def youtube_script(url: UrlRequest):
     print(url)
     script = await run_in_threadpool(get_youtube_script, url.url)
     return {"code": 200, "message": "success", "data": script}
+
+
+async def rabbitmq_listener():
+    try:
+        connection = await aio_pika.connect_robust(f"amqp://{rabbitmq_user}:{rabbitmq_password}@{rabbitmq_host}/")
+        logging.info("RabbitMQ 연결 성공")
+    except Exception as e:
+        logging.info(f"RabbitMQ 연결 실패: {e}")
+        return
+
+    async with connection:
+        try:
+            channel = await connection.channel()
+            request_queue = await channel.declare_queue(request_queue_name, auto_delete=False)
+        except Exception as e:
+            logging.warning(f"Queue 설정 실패: {e}")
+            return
+
+        async def on_message(message: aio_pika.IncomingMessage):
+            async with message.process():
+                try:
+                    logging.info(f"Received request: {message.body.decode()}")
+
+                except Exception as e:
+                    logging.warning(f"메시지 처리 중 오류 발생: {e}")
+
+        try:
+            await request_queue.consume(on_message)
+            print(" [*] Waiting for messages. To exit press CTRL+C")
+            await asyncio.Future()  # Keep the connection open
+        except Exception as e:
+            print(f"메시지 소비 중 오류 발생: {e}")
+
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8001)

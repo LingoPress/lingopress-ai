@@ -25,7 +25,6 @@ rabbitmq_host = os.environ.get('RABBITMQ_HOST')
 rabbitmq_user = os.environ.get('RABBITMQ_USER')
 rabbitmq_password = os.environ.get('RABBITMQ_PASSWORD')
 
-
 logging.basicConfig(
     level=logging.INFO,  # 로그 레벨 설정
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # 로그 출력 형식
@@ -153,7 +152,20 @@ async def rabbitmq_listener():
             async with message.process():
                 try:
                     logging.info(f"Received request: {message.body.decode()}")
+                    # 요청 메시지 처리 및 응답 전송
+                    # 받은 string 메시지 다시 json으로 변환
+                    parsed_dict = parse_message_to_dict.parse_message_to_dict(message.body.decode())
 
+                    language = parsed_dict.get('language')
+                    video_url = parsed_dict.get('videoUrl')
+                    queue_id = parsed_dict.get('id')
+                    press_id = await run_in_threadpool(post_youtube_script, video_url, language)
+
+                    response_message = json.dumps({"queueId": queue_id, "pressId": press_id})
+                    await channel.default_exchange.publish(
+                        aio_pika.Message(body=response_message.encode()),
+                        routing_key=response_queue_name,
+                    )
                 except Exception as e:
                     logging.warning(f"메시지 처리 중 오류 발생: {e}")
 

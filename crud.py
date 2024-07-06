@@ -71,7 +71,8 @@ class CRUD(Databases):
         sql = "SELECT * from press where original_url = %s"
         try:
             self.cursor.execute(sql, (original_url,))
-            result = self.cursor.fetchall()
+            result = self.cursor.fetchone()[0]
+            print(result)
             return result
         except Exception as e:
             print(" read DB err: ", e)

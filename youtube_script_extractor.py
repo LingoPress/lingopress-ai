@@ -1,9 +1,12 @@
+import logging
 import time
 from datetime import datetime
 
 from pytube import YouTube
 import whisper
 import os
+
+from press_db_service import PressDbService
 
 
 # 유튜브 오디오 다운로드
@@ -39,7 +42,7 @@ def merge_segments(segments):
         text = segment['text']
 
         if current_segment is None:
-            current_segment = {'start': start, 'end': end, 'text': text}
+            current_segment = {'start_ms': start, 'end_ms': end, 'text': text}
         else:
             current_segment['end'] = end
             current_segment['text'] = current_segment['text'].rstrip() + ' ' + text  # 끝 공백 제거 후 결합
@@ -56,10 +59,56 @@ def merge_segments(segments):
 
 def get_youtube_script(url):
     now_time = datetime.today().strftime("%Y%m%d%H%M%S%f")
-    audio_path = download_youtube_audio(url, now_time)
+    audio_path = download_youtube_audio(url, now_time+".wav")
     segments = transcribe_audio(audio_path)
     os.remove(audio_path)
     return merge_segments(segments)
+
+
+# 영상 이미지, 제목 가져오기
+def get_youtube_info(url):
+    yt = YouTube(url)
+    return yt.thumbnail_url, yt.title
+
+
+# db에 업로드
+def upload_youtube_script_to_db(press):
+    press_db_service = PressDbService()
+    last_press_id = press_db_service.uploadPressYoutubeDB(press['title'], press['content'], press['url'], press['published_at'],
+                                          press['image_url'], press['authors'], press['language'], press['publisher'],
+                                          press['access_level'], press['category'])
+
+    logging.info(last_press_id)
+    return last_press_id
+
+
+# 종합
+def post_youtube_script(url, language):
+    press_db_service = PressDbService()
+    exist_press_id = press_db_service.check_exist_url(url)
+
+    # 이미 존재하는 url이면 기존의 press_id 반환
+    if exist_press_id is not None:
+        return exist_press_id
+
+    thumbnail, title = get_youtube_info(url)
+    script = get_youtube_script(url)
+
+    press = {
+        'title': title,
+        'content': script,
+        'url': url,
+        'published_at': None,
+        'image_url': thumbnail,
+        'authors': "",
+        'language': language,
+        "publisher": "",
+        'access_level': 'private',
+        'category': 'YOUTUBE'
+    }
+    logging.info(press)
+    press_id = upload_youtube_script_to_db(press)
+    return press_id
 
 # 유튜브 링크
 # url = "https://www.youtube.com/watch?v=XvCoQ8hxRsY"

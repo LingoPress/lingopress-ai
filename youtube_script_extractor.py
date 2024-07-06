@@ -27,7 +27,7 @@ def transcribe_audio(audio_path):
 
     # 실행 시간 계산 및 출력
     execution_time = end_time - start_time
-    print(f"Whisper Execution time: {execution_time} seconds")
+    logging.info(f"Whisper Execution time: {execution_time} seconds")
     return result["segments"]
 
 

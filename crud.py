@@ -85,10 +85,10 @@ class CRUD(Databases):
         except Exception as e:
             print(" insert DB err: ", e)
 
-    def insertPressYoutubeContentDB(self, press_id, line_number, content, start_ms, end_ms):
-        sql = "INSERT INTO press_content_line(press_id, line_number, line_text, start_ms, end_ms) VALUES (%s, %s, %s, %s ,%s);"
+    def insertPressYoutubeContentDB(self, press_id, line_number, content, start_sec, end_sec):
+        sql = "INSERT INTO press_content_line(press_id, line_number, line_text, start_sec, end_sec) VALUES (%s, %s, %s, %s ,%s);"
         try:
-            self.cursor.execute(sql, (press_id, line_number, content, start_ms, end_ms))
+            self.cursor.execute(sql, (press_id, line_number, content, start_sec, end_sec))
             self.db.commit()
         except Exception as e:
             print(" insert DB err: ", e)

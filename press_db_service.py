@@ -51,9 +51,9 @@ class PressDbService(CRUD):
             # 나중에 벌크 연산 이용해보면 좋을듯
             line_number += 1
             logging.info(
-                "press_id: {}, line_number: {}, {}, {}, {}".format(last_press_id, line_number, content_line["start_ms"],
-                                                                   content_line["end_ms"], content_line["text"]))
-            self.insertPressYoutubeContentDB(last_press_id, line_number, content_line["text"], content_line["start_ms"], content_line["end_ms"])
+                "press_id: {}, line_number: {}, {}, {}, {}".format(last_press_id, line_number, content_line["start_sec"],
+                                                                   content_line["end_sec"], content_line["text"]))
+            self.insertPressYoutubeContentDB(last_press_id, line_number, content_line["text"], content_line["start_sec"], content_line["end_sec"])
 
         logging.info("{} 업로드 완료".format(original_url))
 

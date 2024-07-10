@@ -42,7 +42,7 @@ def merge_segments(segments):
         text = segment['text']
 
         if current_segment is None:
-            current_segment = {'start_ms': start, 'end_ms': end, 'text': text}
+            current_segment = {'start_sec': start, 'end_sec': end, 'text': text}
         else:
             current_segment['end'] = end
             current_segment['text'] = current_segment['text'].rstrip() + ' ' + text  # 끝 공백 제거 후 결합

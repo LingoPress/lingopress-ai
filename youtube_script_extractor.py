@@ -68,7 +68,7 @@ def get_youtube_script(url):
 # 영상 이미지, 제목 가져오기
 def get_youtube_info(url):
     yt = YouTube(url)
-    return yt.thumbnail_url, yt.title
+    return yt.thumbnail_url, yt.title, yt.length
 
 
 # db에 업로드
@@ -89,9 +89,13 @@ def post_youtube_script(url, language):
 
     # 이미 존재하는 url이면 기존의 press_id 반환
     if exist_press_id is not None:
-        return exist_press_id
+        return exist_press_id, "true"
 
-    thumbnail, title = get_youtube_info(url)
+    thumbnail, title, length = get_youtube_info(url)
+    # 영상 길이가 20분 이상이면 거절
+    if length > 1200:
+        return None, "false"
+
     script = get_youtube_script(url)
 
     press = {
@@ -108,7 +112,7 @@ def post_youtube_script(url, language):
     }
     logging.info(press)
     press_id = upload_youtube_script_to_db(press)
-    return press_id
+    return press_id, "true"
 
 # 유튜브 링크
 # url = "https://www.youtube.com/watch?v=XvCoQ8hxRsY"

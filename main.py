@@ -150,24 +150,34 @@ async def rabbitmq_listener():
 
         async def on_message(message: aio_pika.IncomingMessage):
             async with message.process():
+                message_body_decode = message.body.decode()
                 try:
-                    logging.info(f"Received request: {message.body.decode()}")
+                    logging.info(f"Received request: {message_body_decode}")
                     # 요청 메시지 처리 및 응답 전송
                     # 받은 string 메시지 다시 json으로 변환
-                    parsed_dict = parse_message_to_dict.parse_message_to_dict(message.body.decode())
+                    parsed_dict = parse_message_to_dict.parse_message_to_dict(message_body_decode)
 
                     language = parsed_dict.get('language')
                     video_url = parsed_dict.get('videoUrl')
                     queue_id = parsed_dict.get('id')
-                    press_id = await run_in_threadpool(post_youtube_script, video_url, language)
+                    press_id, is_success = await run_in_threadpool(post_youtube_script, video_url, language)
 
-                    response_message = json.dumps({"queueId": queue_id, "pressId": press_id})
+                    response_message = json.dumps({"queueId": queue_id, "pressId": press_id, "isSuccess": is_success})
                     await channel.default_exchange.publish(
                         aio_pika.Message(body=response_message.encode()),
                         routing_key=response_queue_name,
                     )
                 except Exception as e:
                     logging.warning(f"메시지 처리 중 오류 발생: {e}")
+                    try:
+                        response_message = json.dumps({"queueId": queue_id, "isSuccess": "false"})
+                    except Exception as parse_error:
+                        logging.error(f"에러 메시지 발송 실패: {parse_error}")
+
+                    await channel.default_exchange.publish(
+                        aio_pika.Message(body=response_message.encode()),
+                        routing_key=response_queue_name,
+                    )
 
         try:
             await request_queue.consume(on_message)

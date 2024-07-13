@@ -1,12 +1,17 @@
 import logging
+import re
 import time
 from datetime import datetime
 
+import spacy
 from pytube import YouTube
 import whisper
 import os
 
 from press_db_service import PressDbService
+
+nlp = spacy.load("en_core_web_sm")
+abbreviations = {"Dr.", "Mr.", "Mrs.", "Ms.", "Prof.", "Inc."}
 
 
 # 유튜브 오디오 다운로드
@@ -31,27 +36,85 @@ def transcribe_audio(audio_path):
     return result["segments"]
 
 
+# 구분자 기준으로 텍스트 분리 함수
+def split_text_by_delimiters(text):
+    sentences = re.split(r'(?<=[.!?]) +', text)
+    merged_sentences = []
+    i = 0
+
+    while i < len(sentences):
+        sentence = sentences[i]
+        if any(sentence.endswith(abbrev) for abbrev in abbreviations):
+            if i + 1 < len(sentences):
+                sentence += ' ' + sentences[i + 1]
+                i += 1
+        merged_sentences.append(sentence)
+        i += 1
+
+    return merged_sentences
+
+
+# 공백을 하나로 줄이는 함수
+def normalize_whitespace(text):
+    return re.sub(r'\s+', ' ', text).strip()
+
+
 # 문장 병합 함수
 def merge_segments(segments):
     merged_segments = []
     current_segment = None
+    buffer_text = ""
 
     for segment in segments:
         start = int(segment['start'])
         end = int(segment['end'])
         text = segment['text']
 
-        if current_segment is None:
-            current_segment = {'start_sec': start, 'end_sec': end, 'text': text}
+        # 버퍼에 텍스트 추가
+        if buffer_text:
+            buffer_text += ' ' + text
         else:
-            current_segment['end'] = end
-            current_segment['text'] = current_segment['text'].rstrip() + ' ' + text  # 끝 공백 제거 후 결합
+            buffer_text = text
 
-        if text.endswith(('.', '!', '?')):
+        # 구분자를 기준으로 텍스트 분리
+        split_sentences = split_text_by_delimiters(buffer_text)
+
+        for sentence in split_sentences[:-1]:  # 마지막 문장은 미완성일 수 있으므로 제외
+            normalized_sentence = normalize_whitespace(sentence)
+            if current_segment is None:
+                current_segment = {'start_sec': start, 'end_sec': end, 'text': normalized_sentence}
+            else:
+                current_segment['end_sec'] = end
+                current_segment['text'] += ' ' + normalized_sentence
             merged_segments.append(current_segment)
             current_segment = None
 
-    if current_segment is not None:
+        # 마지막 미완성 문장을 버퍼에 유지
+        buffer_text = split_sentences[-1]
+
+        # Spacy를 사용하여 문장의 경계 파악
+        doc = nlp(buffer_text)
+        sentences = list(doc.sents)
+
+        # Spacy가 문장으로 인식한 경우 병합된 세그먼트 리스트에 추가
+        if len(sentences) > 1 or any([text.endswith(p) for p in ('.', '!', '?')]):
+            normalized_buffer_text = normalize_whitespace(buffer_text)
+            if current_segment is None:
+                current_segment = {'start_sec': start, 'end_sec': end, 'text': normalized_buffer_text}
+            else:
+                current_segment['end_sec'] = end
+                current_segment['text'] += ' ' + normalized_buffer_text
+            merged_segments.append(current_segment)
+            current_segment = None
+            buffer_text = ""
+
+    if buffer_text:
+        normalized_buffer_text = normalize_whitespace(buffer_text)
+        if current_segment is None:
+            current_segment = {'start_sec': start, 'end_sec': end, 'text': normalized_buffer_text}
+        else:
+            current_segment['end_sec'] = end
+            current_segment['text'] += ' ' + normalized_buffer_text
         merged_segments.append(current_segment)
 
     return merged_segments
@@ -59,7 +122,7 @@ def merge_segments(segments):
 
 def get_youtube_script(url):
     now_time = datetime.today().strftime("%Y%m%d%H%M%S%f")
-    audio_path = download_youtube_audio(url, now_time+".wav")
+    audio_path = download_youtube_audio(url, now_time + ".wav")
     segments = transcribe_audio(audio_path)
     os.remove(audio_path)
     return merge_segments(segments)
@@ -74,9 +137,11 @@ def get_youtube_info(url):
 # db에 업로드
 def upload_youtube_script_to_db(press):
     press_db_service = PressDbService()
-    last_press_id = press_db_service.uploadPressYoutubeDB(press['title'], press['content'], press['url'], press['published_at'],
-                                          press['image_url'], press['authors'], press['language'], press['publisher'],
-                                          press['access_level'], press['category'])
+    last_press_id = press_db_service.uploadPressYoutubeDB(press['title'], press['content'], press['url'],
+                                                          press['published_at'],
+                                                          press['image_url'], press['authors'], press['language'],
+                                                          press['publisher'],
+                                                          press['access_level'], press['category'])
 
     logging.info(last_press_id)
     return last_press_id

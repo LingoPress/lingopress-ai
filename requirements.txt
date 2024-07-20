@@ -92,3 +92,5 @@ weasel==0.4.1
 websockets==12.0
 wrapt==1.16.0
 yarl==1.9.4
+
+pytubefix~=6.3.4

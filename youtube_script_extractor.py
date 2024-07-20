@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 
 import spacy
-from pytube import YouTube
+from pytubefix import YouTube
 import whisper
 import os
 

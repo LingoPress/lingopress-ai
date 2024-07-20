@@ -160,9 +160,14 @@ async def rabbitmq_listener():
                     language = parsed_dict.get('language')
                     video_url = parsed_dict.get('videoUrl')
                     queue_id = parsed_dict.get('id')
-                    press_id, is_success = await run_in_threadpool(post_youtube_script, video_url, language)
 
-                    response_message = json.dumps({"queueId": queue_id, "pressId": press_id, "isSuccess": is_success})
+                    if language == "en":
+                        press_id, is_success = await run_in_threadpool(post_youtube_script, video_url, language)
+
+                        response_message = json.dumps({"queueId": queue_id, "pressId": press_id, "isSuccess": is_success})
+                    else: # 영어 자막이 아닌 경우
+                        response_message = json.dumps({"queueId": queue_id, "isSuccess": "false"})
+
                     await channel.default_exchange.publish(
                         aio_pika.Message(body=response_message.encode()),
                         routing_key=response_queue_name,

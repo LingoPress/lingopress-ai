@@ -68,14 +68,18 @@ class CRUD(Databases):
             print(" insert DB err: ", e)
 
     def check_exist_url(self, original_url):
-        sql = "SELECT * from press where original_url = %s"
+        sql = "SELECT * FROM press WHERE original_url = %s"
         try:
             self.cursor.execute(sql, (original_url,))
-            result = self.cursor.fetchone()[0]
-            print(result)
-            return result
+            result = self.cursor.fetchone()
+            if result:
+                return result[0]
+            else:
+                print("URL not found in the database.")
+                return None
         except Exception as e:
-            print(" read DB err: ", e)
+            print("read DB error:", e)
+            return None
 
     def insertPressContentDB(self, press_id, line_number, content):
         sql = "INSERT INTO press_content_line(press_id, line_number, line_text) VALUES (%s, %s, %s);"
